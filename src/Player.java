@@ -1,10 +1,6 @@
-import com.mpatric.mp3agic.InvalidDataException;
-import com.mpatric.mp3agic.UnsupportedTagException;
 import javazoom.jl.decoder.*;
 import javazoom.jl.player.AudioDevice;
-import javazoom.jl.player.FactoryRegistry;
 import support.PlayerWindow;
-import support.Song;
 
 import javax.swing.event.MouseInputAdapter;
 import java.awt.*;
@@ -30,26 +26,34 @@ public class Player {
 
     private int currentFrame = 0;
 
-    private final ActionListener buttonListenerPlayNow = e -> ;
-    private final ActionListener buttonListenerRemove = e -> ;
-    private final ActionListener buttonListenerAddSong = e -> ;
-    private final ActionListener buttonListenerPlayPause = e -> ;
-    private final ActionListener buttonListenerStop = e -> ;
-    private final ActionListener buttonListenerNext = e -> ;
-    private final ActionListener buttonListenerPrevious = e -> ;
-    private final ActionListener buttonListenerShuffle = e -> ;
-    private final ActionListener buttonListenerLoop = e -> ;
+    private int songOrder = 0;
+
+    private final String TITULO_DA_JANELA = "Spotify wannabe";
+    private final String LISTA_DE_REPRODUÇÃO[][] = new String[0][];
+
+    private final ActionListener buttonListenerPlayNow = e -> playSong();
+    private final ActionListener buttonListenerRemove = e -> removeSong();
+    private final ActionListener buttonListenerAddSong = e -> addSong();
+    private final ActionListener buttonListenerPlayPause = e -> playPauseSong();
+    private final ActionListener buttonListenerStop = e -> stopSong();
+    private final ActionListener buttonListenerNext = e -> nextSong();
+    private final ActionListener buttonListenerPrevious = e -> previousSong();
+    private final ActionListener buttonListenerShuffle = e -> shufflePlaylist();
+    private final ActionListener buttonListenerLoop = e -> loopPlaylist();
     private final MouseInputAdapter scrubberMouseInputAdapter = new MouseInputAdapter() {
         @Override
         public void mouseReleased(MouseEvent e) {
+            System.out.println("Teste");
         }
 
         @Override
         public void mousePressed(MouseEvent e) {
+            System.out.println("Teste");
         }
 
         @Override
         public void mouseDragged(MouseEvent e) {
+            System.out.println("Teste");
         }
     };
 
@@ -114,5 +118,44 @@ public class Player {
             while (framesToSkip-- > 0 && condition) condition = skipNextFrame();
         }
     }
+
+    private void playSong() {
+        System.out.println("Teste playsong");
+    }
+
+    private void removeSong() {
+        System.out.println("Teste removeSong");
+    }
+
+    private void addSong() {
+        System.out.println("Teste addSong");
+    }
+
+    private void playPauseSong() {
+        System.out.println("Teste playPauseSong");
+    }
+
+    private void stopSong() {
+        System.out.println("Teste stopSong");
+    }
+
+    private void nextSong() {
+        System.out.println("Teste nextSong");
+    }
+
+    private void previousSong() {
+        System.out.println("Teste previousSong");
+    }
+
+    private void shufflePlaylist() {
+        System.out.println("Teste shufflePlaylist");
+    }
+
+    private void loopPlaylist() {
+        System.out.println("Teste loopPlaylist");
+    }
+
+
+
     //</editor-fold>
 }
