@@ -28,7 +28,8 @@ public class PlayerWindow {
     private final String[] columnTitles = new String[]{"Title", "Album", "Artist", "Year", "Length", "Path"};
     public final int BUTTON_ICON_PLAY = 0;
     public final int BUTTON_ICON_PAUSE = 1;
-
+    private final ImageIcon iconPlay = new ImageIcon(Objects.requireNonNull(Icons24.class.getResource("play-24.png")));
+    private final ImageIcon iconPause = new ImageIcon(Objects.requireNonNull(Icons24.class.getResource("pause-24.png")));
     private final JFrame window = new JFrame();
     private final JPanel queuePanel;
     private final JTable queueList;
@@ -333,6 +334,19 @@ public class PlayerWindow {
     }
 
     /**
+     * Sets the icon of the play/pause button.
+     *
+     * @param paused True to display the pause icon (playing) and false to display the play icon (paused).
+     */
+    public void updatePlayPauseButtonIcon(boolean paused) {
+        if (paused) {
+            miniPlayerPlayPauseButton.setIcon(iconPlay);
+        } else {
+            miniPlayerPlayPauseButton.setIcon(iconPause);
+        }
+    }
+
+    /**
      * Enables or disables the Shuffle button.
      *
      * @param enable True to enable and false to disable.
@@ -447,7 +461,7 @@ public class PlayerWindow {
      *
      * @return chosen MP3 or Null if cancelled.
      */
-    public Song openFileChooser() throws IOException, BitstreamException, UnsupportedTagException, InvalidDataException {
+    public Song openFileChooser(int songID) throws IOException, BitstreamException, UnsupportedTagException, InvalidDataException {
         CustomFileChooser fileChooser = new CustomFileChooser();
         fileChooser.setCurrentDirectory(new File
                 (System.getProperty("user.home") + System.getProperty("file.separator") + "Downloads"));
