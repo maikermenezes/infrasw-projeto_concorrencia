@@ -1,13 +1,19 @@
 import javazoom.jl.decoder.*;
-import javazoom.jl.player.AudioDevice;
+import javazoom.jl.player.*;
 import support.PlayerWindow;
+import support.Song;
 
 import javax.swing.event.MouseInputAdapter;
 import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
-public class Player {
+public class Player extends Component {
 
     /**
      * The MPEG audio bitstream.
@@ -24,12 +30,36 @@ public class Player {
 
     private PlayerWindow window;
 
+    private final Lock threadLock = new ReentrantLock();
+
     private int currentFrame = 0;
 
-    private int songOrder = 0;
+    public List<Song> getSongs() {
+        return this.songs;
+    }
+
+    public void setSongs(ArrayList<Song> songs) {
+        this.songs = songs;
+    }
+
+    private List<Song> songs = new ArrayList();
+
+    public int getSongOrder() {
+        return songOrder;
+    }
+
+    public void setSongOrder(int songOrder) {
+        this.songOrder = songOrder;
+    }
+
+    public void increaseSongOrder(){
+        this.songOrder++;
+    }
+
+    private int songOrder = 1;
 
     private final String TITULO_DA_JANELA = "Spotify wannabe";
-    private final String LISTA_DE_REPRODUÇÃO[][] = new String[0][];
+    private String playList[][] = new String[0][];
 
     private final ActionListener buttonListenerPlayNow = e -> playSong();
     private final ActionListener buttonListenerRemove = e -> removeSong();
@@ -60,7 +90,7 @@ public class Player {
     public Player() {
         EventQueue.invokeLater(() -> window = new PlayerWindow(
                 TITULO_DA_JANELA,
-                LISTA_DE_REPRODUÇÃO,
+                playList,
                 buttonListenerPlayNow,
                 buttonListenerRemove,
                 buttonListenerAddSong,
@@ -120,15 +150,52 @@ public class Player {
     }
 
     private void playSong() {
+
+        Player mp3 = new Player();
         System.out.println("Teste playsong");
     }
 
     private void removeSong() {
         System.out.println("Teste removeSong");
+
     }
 
     private void addSong() {
-        System.out.println("Teste addSong");
+
+        try{
+
+            Song song = this.window.openFileChooser();
+            addSongToPlaylist(song);
+        }catch(Exception e){
+
+            System.out.println(e);
+        }
+    }
+
+    public void addSongToPlaylist(Song song){
+        String[] songInfoDisplay = song.getDisplayInfo();
+        new Thread(() -> {
+            try {
+                threadLock.lock();
+
+                List<String[]> currentPlaylist = new ArrayList<>(Arrays.asList(playList));
+
+                String[][] updatedPlaylist = {songInfoDisplay};
+
+                currentPlaylist.add(updatedPlaylist[0]);
+
+                playList = currentPlaylist.toArray(updatedPlaylist);
+
+                this.window.setQueueList(playList);
+
+            } catch (Exception e) {
+
+                System.out.println(e);
+            } finally {
+
+                threadLock.unlock();
+            }
+        }).start();
     }
 
     private void playPauseSong() {
