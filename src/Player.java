@@ -1,5 +1,5 @@
 import javazoom.jl.decoder.*;
-import javazoom.jl.player.*;
+import javazoom.jl.player.AudioDevice;
 import support.PlayerWindow;
 import support.Song;
 
@@ -7,6 +7,8 @@ import javax.swing.event.MouseInputAdapter;
 import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -28,11 +30,10 @@ public class Player extends Component {
      */
     private AudioDevice device;
 
-    private PlayerWindow window;
-
     private final Lock threadLock = new ReentrantLock();
 
     private int currentFrame = 0;
+    private String currentSongPlayingName;
 
     public List<Song> getSongs() {
         return this.songs;
@@ -58,10 +59,22 @@ public class Player extends Component {
 
     private int songOrder = 1;
 
+    private boolean isPlaying = false;
+
+    public SongThread getCurrentSongPlaying() {
+        return currentSongPlaying;
+    }
+
+    public void setCurrentSongPlaying(SongThread currentSongPlaying) {
+        this.currentSongPlaying = currentSongPlaying;
+    }
+
+    private SongThread currentSongPlaying;
+
     private final String TITULO_DA_JANELA = "Spotify wannabe";
     private String playList[][] = new String[0][];
 
-    private final ActionListener buttonListenerPlayNow = e -> playSong();
+    private final ActionListener buttonListenerPlayNow = e -> beginSong();
     private final ActionListener buttonListenerRemove = e -> removeSong();
     private final ActionListener buttonListenerAddSong = e -> addSong();
     private final ActionListener buttonListenerPlayPause = e -> playPauseSong();
@@ -70,6 +83,7 @@ public class Player extends Component {
     private final ActionListener buttonListenerPrevious = e -> previousSong();
     private final ActionListener buttonListenerShuffle = e -> shufflePlaylist();
     private final ActionListener buttonListenerLoop = e -> loopPlaylist();
+
     private final MouseInputAdapter scrubberMouseInputAdapter = new MouseInputAdapter() {
         @Override
         public void mouseReleased(MouseEvent e) {
@@ -87,20 +101,67 @@ public class Player extends Component {
         }
     };
 
+    private PlayerWindow playerWindow;
+
     public Player() {
-        EventQueue.invokeLater(() -> window = new PlayerWindow(
-                TITULO_DA_JANELA,
-                playList,
-                buttonListenerPlayNow,
-                buttonListenerRemove,
-                buttonListenerAddSong,
-                buttonListenerShuffle,
-                buttonListenerPrevious,
-                buttonListenerPlayPause,
-                buttonListenerStop,
-                buttonListenerNext,
-                buttonListenerLoop,
-                scrubberMouseInputAdapter)
+        String windowTitle = "Spotify wannabe";
+
+        ActionListener playNowListener = event -> beginSong();
+        ActionListener removeListener =  event -> removeSong();
+        ActionListener addSongListener =  event -> addSong();
+        ActionListener playPauseListener =  event -> playPauseSong();
+        ActionListener stopListener =  event -> stopSong();
+        ActionListener nextListener =  event -> nextSong();
+        ActionListener previousListener =  event -> previousSong();
+        ActionListener shuffleListener =  event -> shufflePlaylist();
+        ActionListener repeatListener =  event -> repeatSong();
+
+        MouseListener scrubber = new MouseListener() {
+            @Override
+            public void mouseClicked(MouseEvent event) {}
+
+            @Override
+            public void mouseReleased(MouseEvent event) {
+                mouseRelease();
+            }
+
+            @Override
+            public void mousePressed(MouseEvent event) {
+                mouseClick();
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent event) {}
+
+            @Override
+            public void mouseExited(MouseEvent event) {}
+        };
+
+        MouseMotionListener scrubberMotion = new MouseMotionListener() {
+            @Override
+            public void mouseDragged(MouseEvent event) {
+                mouseDrag();
+            }
+
+            @Override
+            public void mouseMoved(MouseEvent event) {}
+
+        };
+
+        this.playerWindow = new PlayerWindow(
+                windowTitle,
+                this.playList,
+                playNowListener,
+                removeListener,
+                addSongListener,
+                shuffleListener,
+                previousListener,
+                playPauseListener,
+                stopListener,
+                nextListener,
+                repeatListener,
+                scrubber,
+                scrubberMotion
         );
     }
 
@@ -149,10 +210,24 @@ public class Player extends Component {
         }
     }
 
-    private void playSong() {
+    private void beginSong(){
+        String windowSong = playerWindow.getSelectedSong();
+        System.out.println(windowSong);
+        setCurrentSongPlayingName(windowSong);
+        playSong(windowSong);
 
-        Player mp3 = new Player();
-        System.out.println("Teste playsong");
+    }
+
+    private void playSong(String selectedSong) {
+
+        if(isPlaying) {
+            currentSongPlaying.suspend();
+        }
+
+        currentSongPlaying = new SongThread(playerWindow, this, this.playList, selectedSong);
+        isPlaying = true;
+        currentSongPlaying.start();
+
     }
 
     private void removeSong() {
@@ -164,7 +239,7 @@ public class Player extends Component {
 
         try{
 
-            Song song = this.window.openFileChooser();
+            Song song = playerWindow.openFileChooser();
             addSongToPlaylist(song);
         }catch(Exception e){
 
@@ -178,15 +253,13 @@ public class Player extends Component {
             try {
                 threadLock.lock();
 
-                List<String[]> currentPlaylist = new ArrayList<>(Arrays.asList(playList));
+                addSongInfoToPlaylist(songInfoDisplay);
 
-                String[][] updatedPlaylist = {songInfoDisplay};
+                System.out.println(songInfoDisplay);
 
-                currentPlaylist.add(updatedPlaylist[0]);
+                playerWindow.setQueueList(playList);
 
-                playList = currentPlaylist.toArray(updatedPlaylist);
-
-                this.window.setQueueList(playList);
+                System.out.println(playList);
 
             } catch (Exception e) {
 
@@ -196,6 +269,20 @@ public class Player extends Component {
                 threadLock.unlock();
             }
         }).start();
+    }
+
+    public void repeatSong(){
+
+    };
+
+    private void addSongInfoToPlaylist(String[] songInfoDisplay) {
+        List<String[]> currentPlaylist = new ArrayList<>(Arrays.asList(playList));
+
+        String[][] updatedPlaylist = {songInfoDisplay};
+
+        currentPlaylist.add(updatedPlaylist[0]);
+
+        playList = currentPlaylist.toArray(updatedPlaylist);
     }
 
     private void playPauseSong() {
@@ -222,6 +309,19 @@ public class Player extends Component {
         System.out.println("Teste loopPlaylist");
     }
 
+    public void setCurrentSongPlayingName(String currentSongPlayingName) {
+        this.currentSongPlayingName = currentSongPlayingName;
+    }
+
+    public String getCurrentSongPlayingName() {
+        return currentSongPlayingName;
+    }
+
+    private void mouseRelease() { System.out.println("Soltou");}
+
+    private void mouseClick() { System.out.println("Clicou"); }
+
+    private void mouseDrag() { System.out.println("Arrastou"); }
 
 
     //</editor-fold>
