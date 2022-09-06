@@ -352,6 +352,14 @@ public class PlayerWindow {
         }
     }
 
+    public void toggleMusicControlButtons(Boolean value){
+        miniPlayerNextButton.setEnabled(value);
+        miniPlayerPreviousButton.setEnabled(value);
+        miniPlayerScrubber.setEnabled(value);
+        miniPlayerStopButton.setEnabled(value);
+        miniPlayerPlayPauseButton.setEnabled(value);
+    }
+
     /**
      * Enables or disables the Shuffle button.
      *

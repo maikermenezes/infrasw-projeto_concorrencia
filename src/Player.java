@@ -211,8 +211,8 @@ public class Player extends Component {
     }
 
     private void beginSong(){
+
         String windowSong = playerWindow.getSelectedSong();
-        System.out.println(windowSong);
         setCurrentSongPlayingName(windowSong);
         playSong(windowSong);
 
@@ -227,6 +227,7 @@ public class Player extends Component {
         currentSongPlaying = new SongThread(playerWindow, this, this.playList, selectedSong);
         isPlaying = true;
         currentSongPlaying.start();
+        playerWindow.toggleMusicControlButtons(true);
 
     }
 
@@ -241,6 +242,7 @@ public class Player extends Component {
 
             Song song = playerWindow.openFileChooser();
             addSongToPlaylist(song);
+
         }catch(Exception e){
 
             System.out.println(e);
@@ -255,11 +257,7 @@ public class Player extends Component {
 
                 addSongInfoToPlaylist(songInfoDisplay);
 
-                System.out.println(songInfoDisplay);
-
                 playerWindow.setQueueList(playList);
-
-                System.out.println(playList);
 
             } catch (Exception e) {
 
@@ -286,11 +284,34 @@ public class Player extends Component {
     }
 
     private void playPauseSong() {
-        System.out.println("Teste playPauseSong");
+
+        try{
+            if(currentSongPlaying == null || !isPlaying){
+
+                beginSong();
+
+            } else {
+
+                currentSongPlaying.suspend();
+                setPlaying(false);
+            }
+
+            playerWindow.updatePlayPauseButtonIcon(!isPlaying);
+
+        } catch(Exception e) {
+
+            System.out.println(e);
+        }
+
     }
 
     private void stopSong() {
-        System.out.println("Teste stopSong");
+
+        if(isPlaying) {
+            currentSongPlaying.suspend();
+        }
+
+        playerWindow.resetMiniPlayer();
     }
 
     private void nextSong() {
@@ -324,5 +345,12 @@ public class Player extends Component {
     private void mouseDrag() { System.out.println("Arrastou"); }
 
 
+    public boolean isPlaying() {
+        return isPlaying;
+    }
+
+    public void setPlaying(boolean playing) {
+        isPlaying = playing;
+    }
     //</editor-fold>
 }

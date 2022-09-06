@@ -17,12 +17,14 @@ public class SongThread extends Thread {
     private final Player player;
     int currentSeconds;
     int songID;
-    String[][] songsQueue;
+    String[][] playlist;
     String selectedSong;
     private int maxFrames;
     private Bitstream bitstream;
     private Decoder decoder;
     private AudioDevice device;
+
+    private boolean paused = false;
 
 
     public SongThread(
@@ -33,7 +35,7 @@ public class SongThread extends Thread {
 
         this.playerWindow = playerWindow;
         this.player = player;
-        this.songsQueue = songsQueue;
+        this.playlist = songsQueue;
         this.selectedSong = selectedSong;
     }
 
@@ -49,7 +51,10 @@ public class SongThread extends Thread {
             long length = mp3.getLengthInMilliseconds();
             bitstream = new Bitstream(new BufferedInputStream(new FileInputStream(file)));
             start(length);
-        } catch (Exception exception) { System.out.println(exception); }
+        } catch (Exception exception) {
+
+            System.out.println(exception);
+        }
     }
 
     public void start(long length) {
@@ -65,7 +70,31 @@ public class SongThread extends Thread {
                     playerWindow.setTime(currentFrame * 24, (int) length);
                     currentFrame++;
                 } while ( header != null);
-            } catch (Exception exception) { System.out.println(exception); }
+            } catch (Exception exception) {
+
+                System.out.println(exception);
+            }
+        }
+    }
+
+    public void pauseResume(){
+        paused = !paused;
+
+        synchronized(this){
+            this.notify();
+        }
+
+    }
+
+    private void allowPause() {
+        synchronized(this) {
+            while(paused) {
+                try {
+                    this.wait();
+                } catch(InterruptedException e) {
+                    System.out.println(e);
+                }
+            }
         }
     }
 }
