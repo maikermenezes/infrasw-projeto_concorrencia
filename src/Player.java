@@ -1,15 +1,15 @@
-import java.io.*;
-import java.lang.*;
-import java.lang.reflect.Array;
-import java.util.*;
 import javazoom.jl.decoder.*;
 import javazoom.jl.player.AudioDevice;
 import support.PlayerWindow;
 import support.Song;
+
 import javax.swing.event.MouseInputAdapter;
-import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -29,18 +29,56 @@ public class Player {
      */
     private AudioDevice device;
 
-    private PlayerWindow window;
-    private String playList[][] = new String[0][];
+    private final Lock threadLock = new ReentrantLock();
+
     private int currentFrame = 0;
-    private int songID = 0;
-    private int songOrder = 0;
+    private String currentSongPlayingName;
+
+    public List<Song> getSongs() {
+        return this.songs;
+    }
+
+    public void setSongs(ArrayList<Song> songs) {
+        this.songs = songs;
+    }
+
+    private List<Song> songs = new ArrayList();
+
+    public int getSongOrder() {
+        return songOrder;
+    }
+
+    public void setSongOrder(int songOrder) {
+        this.songOrder = songOrder;
+    }
+
+    public void increaseSongOrder(){
+        this.songOrder++;
+    }
+
+    private int songOrder = 1;
+
     private boolean isPlaying = false;
 
-    private final Lock threadLock = new ReentrantLock();
+    public SongThread getCurrentSongPlaying() {
+        return currentSongPlaying;
+    }
+
+    public void setCurrentSongPlaying(SongThread currentSongPlaying) {
+        this.currentSongPlaying = currentSongPlaying;
+    }
+
+    private SongThread currentSongPlaying;
+
+    private PlayerWindow window;
+    private String playList[][] = new String[0][];
+
+    private int songID = 0;
+
     private final String TITULO_DA_JANELA = "Spotify wannabe";
     private final String LISTA_DE_REPRODUÇÃO[][] = new String[0][];
 
-    private final ActionListener buttonListenerPlayNow = e -> playSong(toString());
+    private final ActionListener buttonListenerPlayNow = e -> beginSong();
     private final ActionListener buttonListenerRemove = e -> removeSong();
     private final ActionListener buttonListenerAddSong = e -> addSong();
     private final ActionListener buttonListenerPlayPause = e -> playPauseSong();
@@ -49,6 +87,7 @@ public class Player {
     private final ActionListener buttonListenerPrevious = e -> previousSong();
     private final ActionListener buttonListenerShuffle = e -> shufflePlaylist();
     private final ActionListener buttonListenerLoop = e -> loopPlaylist();
+
     private final MouseInputAdapter scrubberMouseInputAdapter = new MouseInputAdapter() {
         @Override
         public void mouseReleased(MouseEvent e) {
@@ -66,20 +105,67 @@ public class Player {
         }
     };
 
-    public Player( ) {
-        EventQueue.invokeLater(() -> window = new PlayerWindow(
-                TITULO_DA_JANELA,
+    private PlayerWindow playerWindow;
+
+    public Player() {
+        String windowTitle = "Spotify wannabe";
+
+        ActionListener playNowListener = event -> beginSong();
+        ActionListener removeListener =  event -> removeSong();
+        ActionListener addSongListener =  event -> addSong();
+        ActionListener playPauseListener =  event -> playPauseSong();
+        ActionListener stopListener =  event -> stopSong();
+        ActionListener nextListener =  event -> nextSong();
+        ActionListener previousListener =  event -> previousSong();
+        ActionListener shuffleListener =  event -> shufflePlaylist();
+        ActionListener repeatListener =  event -> repeatSong();
+
+        MouseListener scrubber = new MouseListener() {
+            @Override
+            public void mouseClicked(MouseEvent event) {}
+
+            @Override
+            public void mouseReleased(MouseEvent event) {
+                mouseRelease();
+            }
+
+            @Override
+            public void mousePressed(MouseEvent event) {
+                mouseClick();
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent event) {}
+
+            @Override
+            public void mouseExited(MouseEvent event) {}
+        };
+
+        MouseMotionListener scrubberMotion = new MouseMotionListener() {
+            @Override
+            public void mouseDragged(MouseEvent event) {
+                mouseDrag();
+            }
+
+            @Override
+            public void mouseMoved(MouseEvent event) {}
+
+        };
+
+        this.playerWindow = new PlayerWindow(
+                windowTitle,
                 this.playList,
-                buttonListenerPlayNow,
-                buttonListenerRemove,
-                buttonListenerAddSong,
-                buttonListenerShuffle,
-                buttonListenerPrevious,
-                buttonListenerPlayPause,
-                buttonListenerStop,
-                buttonListenerNext,
-                buttonListenerLoop,
-                scrubberMouseInputAdapter)
+                playNowListener,
+                removeListener,
+                addSongListener,
+                shuffleListener,
+                previousListener,
+                playPauseListener,
+                stopListener,
+                nextListener,
+                repeatListener,
+                scrubber,
+                scrubberMotion
         );
     }
 
@@ -128,12 +214,29 @@ public class Player {
         }
     }
 
+    private void beginSong(){
+
+        String windowSong = playerWindow.getSelectedSong();
+        setCurrentSongPlayingName(windowSong);
+        playSong(windowSong);
+
+    }
+
     private void playSong(String selectedSong) {
+
+        if(isPlaying) {
+            currentSongPlaying.suspend();
+        }
+
+        currentSongPlaying = new SongThread(playerWindow, this, this.playList, selectedSong);
+        isPlaying = true;
+        currentSongPlaying.start();
+        playerWindow.toggleMusicControlButtons(true);
 
     }
 
     private void removeSong() {
-        String songSelected = window.getSelectedSong();
+        String songSelected = playerWindow.getSelectedSong();
         removeFromQueue(songSelected);
 
     }
@@ -153,7 +256,7 @@ public class Player {
                 System.out.println(playList.length);
                 System.out.println(copyArray.length);
                 playList = copyArray;
-                window.setQueueList(playList);
+                playerWindow.setQueueList(playList);
 
             } finally {
                 threadLock.unlock();
@@ -179,8 +282,9 @@ public class Player {
 
         try{
 
-            Song song = this.window.openFileChooser(this.songID);
+            Song song = playerWindow.openFileChooser(this.songID);
             addSongToPlaylist(song);
+
         }catch(Exception e){
 
             System.out.println(e);
@@ -193,15 +297,9 @@ public class Player {
             try {
                 threadLock.lock();
 
-                List<String[]> currentPlaylist = new ArrayList<>(Arrays.asList(playList));
+                addSongInfoToPlaylist(songInfoDisplay);
 
-                String[][] updatedPlaylist = {songInfoDisplay};
-
-                currentPlaylist.add(updatedPlaylist[0]);
-
-                playList = currentPlaylist.toArray(updatedPlaylist);
-
-                this.window.setQueueList(playList);
+                playerWindow.setQueueList(playList);
 
             } catch (Exception e) {
 
@@ -213,13 +311,49 @@ public class Player {
         }).start();
     }
 
+    public void repeatSong(){
+
+    };
+
+    private void addSongInfoToPlaylist(String[] songInfoDisplay) {
+        List<String[]> currentPlaylist = new ArrayList<>(Arrays.asList(playList));
+
+        String[][] updatedPlaylist = {songInfoDisplay};
+
+        currentPlaylist.add(updatedPlaylist[0]);
+
+        playList = currentPlaylist.toArray(updatedPlaylist);
+    }
 
     private void playPauseSong() {
-        System.out.println("Teste playPauseSong");
+
+        try{
+            if(currentSongPlaying == null || !isPlaying){
+
+                beginSong();
+
+            } else {
+
+                currentSongPlaying.suspend();
+                setPlaying(false);
+            }
+
+            playerWindow.updatePlayPauseButtonIcon(!isPlaying);
+
+        } catch(Exception e) {
+
+            System.out.println(e);
+        }
+
     }
 
     private void stopSong() {
-        System.out.println("Teste stopSong");
+
+        if(isPlaying) {
+            currentSongPlaying.suspend();
+        }
+
+        playerWindow.resetMiniPlayer();
     }
 
     private void nextSong() {
@@ -238,7 +372,27 @@ public class Player {
         System.out.println("Teste loopPlaylist");
     }
 
+    public void setCurrentSongPlayingName(String currentSongPlayingName) {
+        this.currentSongPlayingName = currentSongPlayingName;
+    }
+
+    public String getCurrentSongPlayingName() {
+        return currentSongPlayingName;
+    }
+
+    private void mouseRelease() { System.out.println("Soltou");}
+
+    private void mouseClick() { System.out.println("Clicou"); }
+
+    private void mouseDrag() { System.out.println("Arrastou"); }
 
 
+    public boolean isPlaying() {
+        return isPlaying;
+    }
+
+    public void setPlaying(boolean playing) {
+        isPlaying = playing;
+    }
     //</editor-fold>
 }

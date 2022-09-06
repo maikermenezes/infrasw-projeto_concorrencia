@@ -76,7 +76,7 @@ public class Song {
         copy[2] = this.getArtist();
         copy[3] = this.getYear();
         copy[4] = this.getStrLength();
-        copy[5] = this.getUuid();
+        copy[5] = this.getFilePath();
         return copy;
     }
 
