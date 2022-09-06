@@ -11,7 +11,7 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 
-public class SongThread extends Thread {
+public class StartSong extends Thread {
 
     private final PlayerWindow playerWindow;
     private final Player player;
@@ -27,7 +27,7 @@ public class SongThread extends Thread {
     private boolean paused = false;
 
 
-    public SongThread(
+    public StartSong(
             PlayerWindow playerWindow,
             Player player,
             String[][] songsQueue,

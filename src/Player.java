@@ -60,15 +60,15 @@ public class Player {
 
     private boolean isPlaying = false;
 
-    public SongThread getCurrentSongPlaying() {
+    public StartSong getCurrentSongPlaying() {
         return currentSongPlaying;
     }
 
-    public void setCurrentSongPlaying(SongThread currentSongPlaying) {
+    public void setCurrentSongPlaying(StartSong currentSongPlaying) {
         this.currentSongPlaying = currentSongPlaying;
     }
 
-    private SongThread currentSongPlaying;
+    private StartSong currentSongPlaying;
 
     private PlayerWindow window;
     private String playList[][] = new String[0][];
@@ -228,7 +228,7 @@ public class Player {
             currentSongPlaying.suspend();
         }
 
-        currentSongPlaying = new SongThread(playerWindow, this, this.playList, selectedSong);
+        currentSongPlaying = new StartSong(playerWindow, this, this.playList, selectedSong);
         isPlaying = true;
         currentSongPlaying.start();
         playerWindow.toggleMusicControlButtons(true);
@@ -242,6 +242,9 @@ public class Player {
     }
 
     public void removeFromQueue(String filePath) {
+        if(isPlaying) {
+            currentSongPlaying.suspend();
+        }
         new Thread(() -> {
             try {
                 threadLock.lock();
