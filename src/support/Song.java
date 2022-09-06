@@ -5,7 +5,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 
 public class Song {
-    private final String uuid;
+    public final String uuid;
     private final String title;
     private final String album;
     private final String artist;

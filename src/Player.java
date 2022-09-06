@@ -4,7 +4,6 @@ import support.PlayerWindow;
 import support.Song;
 
 import javax.swing.event.MouseInputAdapter;
-import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
@@ -15,7 +14,7 @@ import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class Player extends Component {
+public class Player {
 
     /**
      * The MPEG audio bitstream.
@@ -71,8 +70,13 @@ public class Player extends Component {
 
     private SongThread currentSongPlaying;
 
-    private final String TITULO_DA_JANELA = "Spotify wannabe";
+    private PlayerWindow window;
     private String playList[][] = new String[0][];
+
+    private int songID = 0;
+
+    private final String TITULO_DA_JANELA = "Spotify wannabe";
+    private final String LISTA_DE_REPRODUÇÃO[][] = new String[0][];
 
     private final ActionListener buttonListenerPlayNow = e -> beginSong();
     private final ActionListener buttonListenerRemove = e -> removeSong();
@@ -232,15 +236,53 @@ public class Player extends Component {
     }
 
     private void removeSong() {
-        System.out.println("Teste removeSong");
+        String songSelected = playerWindow.getSelectedSong();
+        removeFromQueue(songSelected);
 
+    }
+
+    public void removeFromQueue(String filePath) {
+        new Thread(() -> {
+            try {
+                threadLock.lock();
+                int songId = findSongByID(filePath);
+                System.out.println(songId);
+                String[][] copyArray = new String[playList.length - 1][];
+                for (int i = 0, j = 0; i < playList.length; i++) {
+                    if (i != songId) {
+                        copyArray[j++] = playList[i];
+                    }
+                }
+                System.out.println(playList.length);
+                System.out.println(copyArray.length);
+                playList = copyArray;
+                playerWindow.setQueueList(playList);
+
+            } finally {
+                threadLock.unlock();
+            }
+        }).start();
+    }
+
+    public int findSongByID(String id){
+        System.out.println(playList[0][5]);
+        for(int i = 0; i< playList.length;i++)
+        {
+            if (playList[i][5].equals(id)) {
+                System.out.println("Found the profile containing information for " + id);
+//                System.out.println(id.getFirstName()+id.getFirstName()+id.getLastName()+id.getDob());
+                return i;
+            } else
+                System.out.println("Could not find a profile based on the ID you provided");
+        }
+        return -1;
     }
 
     private void addSong() {
 
         try{
 
-            Song song = playerWindow.openFileChooser();
+            Song song = playerWindow.openFileChooser(this.songID);
             addSongToPlaylist(song);
 
         }catch(Exception e){

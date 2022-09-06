@@ -41,7 +41,6 @@ public class PlayerWindow {
 
     public final int BUTTON_ICON_PLAY = 0;
     public final int BUTTON_ICON_PAUSE = 1;
-
     private final JFrame window = new JFrame();
     private final JPanel queuePanel;
     private final JTable queueList;
@@ -319,13 +318,6 @@ public class PlayerWindow {
         queueList.getColumnModel().getColumn(5).setPreferredWidth(0);
     }
 
-    public void updatePlayPauseButtonIcon(boolean paused) {
-        if (paused) {
-            miniPlayerPlayPauseButton.setIcon(iconPlay);
-        } else {
-            miniPlayerPlayPauseButton.setIcon(iconPause);
-        }
-    }
     /**
      * Sets the information displayed on the mini-player about the current song. Should be called whenever the
      * currently playing song changes.
@@ -358,6 +350,19 @@ public class PlayerWindow {
         miniPlayerScrubber.setEnabled(value);
         miniPlayerStopButton.setEnabled(value);
         miniPlayerPlayPauseButton.setEnabled(value);
+    }
+
+    /**
+     * Sets the icon of the play/pause button.
+     *
+     * @param paused True to display the pause icon (playing) and false to display the play icon (paused).
+     */
+    public void updatePlayPauseButtonIcon(boolean paused) {
+        if (paused) {
+            miniPlayerPlayPauseButton.setIcon(iconPlay);
+        } else {
+            miniPlayerPlayPauseButton.setIcon(iconPause);
+        }
     }
 
     /**
@@ -475,7 +480,7 @@ public class PlayerWindow {
      *
      * @return chosen MP3 or Null if cancelled.
      */
-    public Song openFileChooser() throws IOException, BitstreamException, UnsupportedTagException, InvalidDataException {
+    public Song openFileChooser(int songID) throws IOException, BitstreamException, UnsupportedTagException, InvalidDataException {
         CustomFileChooser fileChooser = new CustomFileChooser();
         fileChooser.setCurrentDirectory(new File
                 (System.getProperty("user.home") + System.getProperty("file.separator") + "Downloads"));
