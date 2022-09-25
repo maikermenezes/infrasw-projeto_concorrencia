@@ -1,3 +1,4 @@
+import com.mpatric.mp3agic.Mp3File;
 import javazoom.jl.decoder.*;
 import javazoom.jl.player.AudioDevice;
 import support.PlayerWindow;
@@ -8,6 +9,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -71,7 +73,11 @@ public class Player {
     private StartSong currentSongPlaying;
 
     private PlayerWindow window;
+
+    private boolean repeat = false;
     private String playList[][] = new String[0][];
+
+    private String[] songInfoDisplay;
 
     private int songID = 0;
 
@@ -217,12 +223,15 @@ public class Player {
     private void beginSong(){
 
         String windowSong = playerWindow.getSelectedSong();
+
         setCurrentSongPlayingName(windowSong);
-        playSong(windowSong);
+
+        int songIndex = findSongByID(windowSong);
+        playSong(windowSong, songIndex);
 
     }
 
-    private void playSong(String selectedSong) {
+    private void playSong(String selectedSong, int songNumb) {
 
         if(isPlaying) {
             currentSongPlaying.suspend();
@@ -232,6 +241,9 @@ public class Player {
         isPlaying = true;
         currentSongPlaying.start();
         playerWindow.toggleMusicControlButtons(true);
+        System.out.println(selectedSong);
+        playerWindow.setPlayingSongInfo(playList[songNumb][0], playList[songNumb][1], playList[songNumb][2]);
+
 
     }
 
@@ -288,6 +300,7 @@ public class Player {
             Song song = playerWindow.openFileChooser(this.songID);
             addSongToPlaylist(song);
 
+
         }catch(Exception e){
 
             System.out.println(e);
@@ -295,11 +308,10 @@ public class Player {
     }
 
     public void addSongToPlaylist(Song song){
-        String[] songInfoDisplay = song.getDisplayInfo();
+        songInfoDisplay = song.getDisplayInfo();
         new Thread(() -> {
             try {
                 threadLock.lock();
-
                 addSongInfoToPlaylist(songInfoDisplay);
 
                 playerWindow.setQueueList(playList);
@@ -360,11 +372,35 @@ public class Player {
     }
 
     private void nextSong() {
-        System.out.println("Teste nextSong");
+        int songIndex = findSongByID(currentSongPlayingName);
+        if(playList.length != songIndex + 1) {
+            nextPrev(+1);
+        }
     }
 
     private void previousSong() {
-        System.out.println("Teste previousSong");
+        int songIndex = findSongByID(currentSongPlayingName);
+        if(songIndex != 0) {
+        nextPrev(-1);
+        }
+    }
+
+    public void nextPrev(int nextPrevIndex) {
+        if (this.repeat) {
+            repeat();
+        } else {
+                int songIndex = findSongByID(currentSongPlayingName);
+                int nextMusicIndex = Math.floorMod(songIndex + nextPrevIndex, this.playList.length);
+                String selectedSong = this.playList[nextMusicIndex][5];
+                currentSongPlayingName = selectedSong;
+                playSong(selectedSong, nextMusicIndex);
+
+        };
+    }
+
+    public void repeat() {
+        int songIndex = findSongByID(currentSongPlayingName);
+        playSong(currentSongPlayingName, songIndex);
     }
 
     private void shufflePlaylist() {
