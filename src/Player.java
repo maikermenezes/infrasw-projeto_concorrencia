@@ -241,7 +241,6 @@ public class Player {
         isPlaying = true;
         currentSongPlaying.start();
         playerWindow.toggleMusicControlButtons(true);
-        System.out.println(selectedSong);
         playerWindow.setPlayingSongInfo(playList[songNumb][0], playList[songNumb][1], playList[songNumb][2]);
 
 
@@ -254,7 +253,7 @@ public class Player {
     }
 
     public void removeFromQueue(String filePath) {
-        if(isPlaying) {
+        if(currentSongPlaying.selectedSong == filePath && isPlaying) {
             currentSongPlaying.suspend();
         }
         new Thread(() -> {
