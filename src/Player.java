@@ -314,6 +314,7 @@ public class Player {
                 addSongInfoToPlaylist(songInfoDisplay);
 
                 playerWindow.setQueueList(playList);
+                playerWindow.setEnabledScrubber(true);
 
             } catch (Exception e) {
 
