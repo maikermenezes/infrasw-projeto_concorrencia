@@ -72,7 +72,7 @@ public class StartSong extends Thread {
                 } while ( header != null);
             } catch (Exception exception) {
 
-                System.out.println(exception);
+                player.nextSong();
             }
         }
     }

@@ -80,7 +80,7 @@ public class Player {
     private String[] songInfoDisplay;
 
     private int songID = 0;
-
+    boolean doublePlay;
     private final String TITULO_DA_JANELA = "Spotify wannabe";
     private final String LISTA_DE_REPRODUÇÃO[][] = new String[0][];
 
@@ -237,6 +237,7 @@ public class Player {
             currentSongPlaying.suspend();
         }
 
+
         currentSongPlaying = new StartSong(playerWindow, this, this.playList, selectedSong);
         isPlaying = true;
         currentSongPlaying.start();
@@ -371,7 +372,7 @@ public class Player {
         playerWindow.resetMiniPlayer();
     }
 
-    private void nextSong() {
+    void nextSong() {
         int songIndex = findSongByID(currentSongPlayingName);
         if(playList.length != songIndex + 1) {
             nextPrev(+1);
@@ -379,6 +380,7 @@ public class Player {
     }
 
     private void previousSong() {
+        stopSong();
         int songIndex = findSongByID(currentSongPlayingName);
         if(songIndex != 0) {
         nextPrev(-1);
@@ -389,11 +391,15 @@ public class Player {
         if (this.repeat) {
             repeat();
         } else {
+
                 int songIndex = findSongByID(currentSongPlayingName);
                 int nextMusicIndex = Math.floorMod(songIndex + nextPrevIndex, this.playList.length);
                 String selectedSong = this.playList[nextMusicIndex][5];
                 currentSongPlayingName = selectedSong;
+                isPlaying = false;
+
                 playSong(selectedSong, nextMusicIndex);
+
 
         };
     }
