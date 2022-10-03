@@ -4,10 +4,10 @@ import com.formdev.flatlaf.FlatLightLaf;
 import com.mpatric.mp3agic.*;
 import javazoom.jl.decoder.BitstreamException;
 import support.resources.fonts.roboto_condensed.Roboto;
+import support.resources.icons.Icons;
 import support.resources.icons.Icons24;
 
 import javax.swing.*;
-import javax.swing.event.MouseInputAdapter;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.text.AttributeSet;
@@ -16,6 +16,8 @@ import javax.swing.text.DocumentFilter;
 import javax.swing.text.PlainDocument;
 import java.awt.*;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -24,11 +26,21 @@ import java.time.Duration;
 import java.util.Objects;
 import java.util.UUID;
 
+
 public class PlayerWindow {
     private final String[] columnTitles = new String[]{"Title", "Album", "Artist", "Year", "Length", "Path"};
+
+    private final ImageIcon iconShuffle = new ImageIcon(Objects.requireNonNull(Icons.class.getResource("shuffle-24.png")));
+    private final ImageIcon iconPrevious = new ImageIcon(Objects.requireNonNull(Icons.class.getResource("previous-24.png")));
+    private final ImageIcon iconPlay = new ImageIcon(Objects.requireNonNull(Icons.class.getResource("play-24.png")));
+    private final ImageIcon iconPause = new ImageIcon(Objects.requireNonNull(Icons.class.getResource("pause-24.png")));
+    private final ImageIcon iconStop = new ImageIcon(Objects.requireNonNull(Icons.class.getResource("stop-24.png")));
+    private final ImageIcon iconNext = new ImageIcon(Objects.requireNonNull(Icons.class.getResource("next-24.png")));
+//    private final ImageIcon iconRepeat = new ImageIcon(Objects.requireNonNull(Icons.class.getResource("repeat-24.png")));
+
+
     public final int BUTTON_ICON_PLAY = 0;
     public final int BUTTON_ICON_PAUSE = 1;
-
     private final JFrame window = new JFrame();
     private final JPanel queuePanel;
     private final JTable queueList;
@@ -74,7 +86,8 @@ public class PlayerWindow {
             ActionListener buttonListenerStop,
             ActionListener buttonListenerNext,
             ActionListener buttonListenerLoop,
-            MouseInputAdapter scrubberMouseInputAdapter) {
+            MouseListener scrubberListenerClick,
+            MouseMotionListener scrubberMouseInputAdapter) {
 
         // Setting theme and typeface.
         try {
@@ -242,7 +255,6 @@ public class PlayerWindow {
         miniPlayerNextButton.addActionListener(buttonListenerNext);
         miniPlayerLoopButton.addActionListener(buttonListenerLoop);
         miniPlayerScrubber.addMouseMotionListener(scrubberMouseInputAdapter);
-        miniPlayerScrubber.addMouseListener(scrubberMouseInputAdapter);
         //</editor-fold>
 
         window.setLayout(new BorderLayout());
@@ -329,6 +341,27 @@ public class PlayerWindow {
         switch (state) {
             case 0 -> miniPlayerPlayPauseButton.setIcon(Icons24.play);
             case 1 -> miniPlayerPlayPauseButton.setIcon(Icons24.pause);
+        }
+    }
+
+    public void toggleMusicControlButtons(Boolean value){
+        miniPlayerNextButton.setEnabled(value);
+        miniPlayerPreviousButton.setEnabled(value);
+        miniPlayerScrubber.setEnabled(value);
+        miniPlayerStopButton.setEnabled(value);
+        miniPlayerPlayPauseButton.setEnabled(value);
+    }
+
+    /**
+     * Sets the icon of the play/pause button.
+     *
+     * @param paused True to display the pause icon (playing) and false to display the play icon (paused).
+     */
+    public void updatePlayPauseButtonIcon(boolean paused) {
+        if (paused) {
+            miniPlayerPlayPauseButton.setIcon(iconPlay);
+        } else {
+            miniPlayerPlayPauseButton.setIcon(iconPause);
         }
     }
 
@@ -447,7 +480,7 @@ public class PlayerWindow {
      *
      * @return chosen MP3 or Null if cancelled.
      */
-    public Song openFileChooser() throws IOException, BitstreamException, UnsupportedTagException, InvalidDataException {
+    public Song openFileChooser(int songID) throws IOException, BitstreamException, UnsupportedTagException, InvalidDataException {
         CustomFileChooser fileChooser = new CustomFileChooser();
         fileChooser.setCurrentDirectory(new File
                 (System.getProperty("user.home") + System.getProperty("file.separator") + "Downloads"));
