@@ -13,6 +13,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -30,6 +31,8 @@ public class Player {
      * The AudioDevice where audio samples are written to.
      */
     private AudioDevice device;
+    private boolean repeat = false;
+    private boolean shuffle = false;
 
     private final Lock threadLock = new ReentrantLock();
 
@@ -73,8 +76,6 @@ public class Player {
     private StartSong currentSongPlaying;
 
     private PlayerWindow window;
-
-    private boolean repeat = false;
     private String playList[][] = new String[0][];
 
     private String[] songInfoDisplay;
@@ -91,8 +92,8 @@ public class Player {
     private final ActionListener buttonListenerStop = e -> stopSong();
     private final ActionListener buttonListenerNext = e -> nextSong();
     private final ActionListener buttonListenerPrevious = e -> previousSong();
-    private final ActionListener buttonListenerShuffle = e -> shufflePlaylist();
-    private final ActionListener buttonListenerLoop = e -> loopPlaylist();
+    private final ActionListener buttonListenerShuffle = e -> shuffleOnOff();
+    private final ActionListener buttonListenerLoop = e -> repeatOnOff();
 
     private final MouseInputAdapter scrubberMouseInputAdapter = new MouseInputAdapter() {
         @Override
@@ -123,7 +124,7 @@ public class Player {
         ActionListener stopListener =  event -> stopSong();
         ActionListener nextListener =  event -> nextSong();
         ActionListener previousListener =  event -> previousSong();
-        ActionListener shuffleListener =  event -> shufflePlaylist();
+        ActionListener shuffleListener =  event -> shuffleOnOff();
         ActionListener repeatListener =  event -> repeatSong();
 
         MouseListener scrubber = new MouseListener() {
@@ -391,7 +392,9 @@ public class Player {
         if (this.repeat) {
             repeat();
         } else {
-
+            if (this.shuffle) {
+                shuffle();
+            }
                 int songIndex = findSongByID(currentSongPlayingName);
                 int nextMusicIndex = Math.floorMod(songIndex + nextPrevIndex, this.playList.length);
                 String selectedSong = this.playList[nextMusicIndex][5];
@@ -409,9 +412,26 @@ public class Player {
         playSong(currentSongPlayingName, songIndex);
     }
 
-    private void shufflePlaylist() {
-        System.out.println("Teste shufflePlaylist");
+    public void shuffleOnOff() {
+        this.shuffle = !this.shuffle;
     }
+
+    public void repeatOnOff() {
+        this.repeat = !this.repeat;
+    }
+
+    public void shuffle() {
+        Random generator = new Random();
+        int currentSongIndex = findSongByID(currentSongPlayingName);
+        int nextIndex = generator.nextInt(this.playList.length);
+        while (nextIndex == currentSongIndex) {
+            nextIndex = generator.nextInt(this.playList.length);
+        }
+        String selectedSong = this.playList[nextIndex][5];
+        currentSongPlayingName = selectedSong;
+        playSong(selectedSong,nextIndex);
+    }
+
 
     private void loopPlaylist() {
         System.out.println("Teste loopPlaylist");
