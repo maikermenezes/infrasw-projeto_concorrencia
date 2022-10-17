@@ -10,10 +10,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -33,11 +30,15 @@ public class Player {
     private AudioDevice device;
     private boolean repeat = false;
     private boolean shuffle = false;
-
+    boolean repeat_active = false;
+    boolean shuffle_active = false;
+    public int shuffleIndex;
+    public int[] shuffleQueue;
     private final Lock threadLock = new ReentrantLock();
 
     private int currentFrame = 0;
     private String currentSongPlayingName;
+    private int repeatIndex;
 
     public List<Song> getSongs() {
         return this.songs;
@@ -92,7 +93,7 @@ public class Player {
     private final ActionListener buttonListenerStop = e -> stopSong();
     private final ActionListener buttonListenerNext = e -> nextSong();
     private final ActionListener buttonListenerPrevious = e -> previousSong();
-    private final ActionListener buttonListenerShuffle = e -> shuffleOnOff();
+    private final ActionListener buttonListenerShuffle = e -> shuffle();
     private final ActionListener buttonListenerLoop = e -> repeatOnOff();
 
     private final MouseInputAdapter scrubberMouseInputAdapter = new MouseInputAdapter() {
@@ -124,8 +125,8 @@ public class Player {
         ActionListener stopListener =  event -> stopSong();
         ActionListener nextListener =  event -> nextSong();
         ActionListener previousListener =  event -> previousSong();
-        ActionListener shuffleListener =  event -> shuffleOnOff();
-        ActionListener repeatListener =  event -> repeatSong();
+        ActionListener shuffleListener =  event -> shuffle();
+        ActionListener repeatListener =  event -> repeatOnOff();
 
         MouseListener scrubber = new MouseListener() {
             @Override
@@ -273,6 +274,17 @@ public class Player {
                 System.out.println(copyArray.length);
                 playList = copyArray;
                 playerWindow.setQueueList(playList);
+                if (this.shuffle_active) {
+                    this.createShuffleQueue(this.songID);
+                }
+
+                if(playList.length <= 1){
+                    playerWindow.setEnabledShuffleButton(false);
+                };
+
+                if(playList.length < 1){
+                    playerWindow.setEnabledLoopButton(false);
+                };
 
             } finally {
                 threadLock.unlock();
@@ -299,6 +311,10 @@ public class Player {
         try{
 
             Song song = playerWindow.openFileChooser(this.songID);
+            if (this.shuffle_active){
+                this.createShuffleQueue(this.songID);
+                this.shuffleIndex = 0;
+            }
             addSongToPlaylist(song);
 
 
@@ -318,6 +334,13 @@ public class Player {
                 playerWindow.setQueueList(playList);
                 playerWindow.setEnabledScrubber(true);
 
+                playerWindow.setEnabledLoopButton(true);
+                if(playList.length > 1){
+                    playerWindow.setEnabledShuffleButton(true);
+                };
+
+
+
             } catch (Exception e) {
 
                 System.out.println(e);
@@ -328,9 +351,6 @@ public class Player {
         }).start();
     }
 
-    public void repeatSong(){
-
-    };
 
     private void addSongInfoToPlaylist(String[] songInfoDisplay) {
         List<String[]> currentPlaylist = new ArrayList<>(Arrays.asList(playList));
@@ -375,7 +395,10 @@ public class Player {
 
     void nextSong() {
         int songIndex = findSongByID(currentSongPlayingName);
-        if(playList.length != songIndex + 1) {
+        if(playList.length == songIndex + 1 && repeat_active){
+            nextPrev(+1);
+        }
+        else if(playList.length != songIndex + 1 ) {
             nextPrev(+1);
         }
     }
@@ -412,24 +435,64 @@ public class Player {
         playSong(currentSongPlayingName, songIndex);
     }
 
-    public void shuffleOnOff() {
-        this.shuffle = !this.shuffle;
-    }
 
     public void repeatOnOff() {
-        this.repeat = !this.repeat;
+        this.repeatIndex = 0;
+        if (this.repeat_active){
+            this.repeat_active = false;
+            System.out.println("shuffle disabled");
+        }
+        else {
+            this.repeat_active = true;
+            System.out.println("shuffle enabled");
+
+
+        }
+    }
+
+    private void createShuffleQueue(int songQueueId){
+
+        Integer[] shuffleQueueTemp = new Integer[this.playList.length - 1];
+        int songIndex = findSongByID(currentSongPlayingName);
+        int count = 0;
+
+        for (int i = 0; i < this.playList.length -1; i++){
+            if (i != songQueueId) {
+                shuffleQueueTemp[count] = i;
+                count++;
+            }
+        }
+
+        List<Integer> tempList = Arrays.asList(shuffleQueueTemp);
+        Collections.shuffle(tempList);
+        this.shuffleQueue = new int[this.playList.length];
+
+        for (int i = 1; i < this.playList.length; i++){
+            this.shuffleQueue[i] = tempList.get(i-1);
+            System.out.println(shuffleQueue[i]);
+        }
+        this.shuffleQueue[0] = songIndex;
+
+        for (int i = 0; i < this.shuffleQueue.length; i++) {
+            System.out.println(this.shuffleQueue[i]);
+        }
+        System.out.println(345);
     }
 
     public void shuffle() {
-        Random generator = new Random();
-        int currentSongIndex = findSongByID(currentSongPlayingName);
-        int nextIndex = generator.nextInt(this.playList.length);
-        while (nextIndex == currentSongIndex) {
-            nextIndex = generator.nextInt(this.playList.length);
+        int songIndex = findSongByID(currentSongPlayingName);
+        this.shuffleIndex = 0;
+        if (this.shuffle_active){
+            this.shuffle_active = false;
+            System.out.println("shuffle disabled");
         }
-        String selectedSong = this.playList[nextIndex][5];
-        currentSongPlayingName = selectedSong;
-        playSong(selectedSong,nextIndex);
+        else {
+            this.shuffle_active = true;
+            System.out.println("shuffle enabled");
+            Thread tCreateShuffle = new Thread(() -> { this.createShuffleQueue(songIndex);});
+            tCreateShuffle.start();
+
+        }
     }
 
 
