@@ -1,3 +1,4 @@
+import com.mpatric.mp3agic.Mp3File;
 import javazoom.jl.decoder.*;
 import javazoom.jl.player.AudioDevice;
 import support.PlayerWindow;
@@ -8,10 +9,8 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.io.File;
+import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -399,33 +398,23 @@ public class Player {
         playerWindow.resetMiniPlayer();
     }
 
-//    void nextSong() {
-//        int songIndex = findSongByID(currentSongPlayingName);
-//        if(playList.length == songIndex + 1 && repeat_active){
-//            nextPrev(+1);
-//        }
-//        else if(playList.length != songIndex + 1 ) {
-//            nextPrev(+1);
-//        }
-//    }
-
-    public void nextSong(){
-        nextPrev(+1);
+    void nextSong() {
+        int songIndex = findSongByID(currentSongPlayingName);
+        if(playList.length == songIndex + 1 && repeat_active){
+            nextPrev(+1);
+        }
+        else if(playList.length != songIndex + 1 ) {
+            nextPrev(+1);
+        }
     }
 
-//    private void previousSong() {
-//        stopSong();
-//        int songIndex = findSongByID(currentSongPlayingName);
-//        if(songIndex != 0) {
-//        nextPrev(-1);
-//        }
-//    }
-
-    public void previousSong() {
+    private void previousSong() {
+        stopSong();
+        int songIndex = findSongByID(currentSongPlayingName);
+        if(songIndex != 0) {
         nextPrev(-1);
+        }
     }
-
-
 
     public void nextPrev(int nextPrevIndex) {
         if (this.repeat) {
@@ -438,6 +427,8 @@ public class Player {
                 int nextMusicIndex = Math.floorMod(songIndex + nextPrevIndex, this.playList.length);
                 String selectedSong = this.playList[nextMusicIndex][5];
                 currentSongPlayingName = selectedSong;
+                isPlaying = false;
+
                 playSong(selectedSong, nextMusicIndex);
 
 
