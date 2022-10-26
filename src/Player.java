@@ -1,4 +1,3 @@
-import com.mpatric.mp3agic.Mp3File;
 import javazoom.jl.decoder.*;
 import javazoom.jl.player.AudioDevice;
 import support.PlayerWindow;
@@ -9,8 +8,10 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
-import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -79,6 +80,9 @@ public class Player {
 
     private PlayerWindow window;
     private String playList[][] = new String[0][];
+
+    private String originalPlayList[][] = new String[0][];
+
     private int qtde, indexCurrent;
     private String[][] newArray;
     private String[] songInfoDisplay;
@@ -331,10 +335,12 @@ public class Player {
         new Thread(() -> {
             try {
                 threadLock.lock();
+
                 addSongInfoToPlaylist(songInfoDisplay);
 
-                    playerWindow.setQueueList(playList);
+                playerWindow.setQueueList(playList);
 
+                originalPlayList = playList;
 
                 playerWindow.setEnabledScrubber(true);
 
@@ -342,8 +348,6 @@ public class Player {
                 if(playList.length > 1){
                     playerWindow.setEnabledShuffleButton(true);
                 };
-
-
 
             } catch (Exception e) {
 
@@ -426,11 +430,9 @@ public class Player {
                 int songIndex = findSongByID(currentSongPlayingName);
                 int nextMusicIndex = Math.floorMod(songIndex + nextPrevIndex, this.playList.length);
                 String selectedSong = this.playList[nextMusicIndex][5];
+
                 currentSongPlayingName = selectedSong;
-                isPlaying = false;
-
                 playSong(selectedSong, nextMusicIndex);
-
 
         };
     }
@@ -459,20 +461,24 @@ public class Player {
 
             newArray = new String[playList.length][];
             System.arraycopy(playList, 0, newArray, 0, playList.length);
+
             String[] first = newArray[0];
             newArray[0] = newArray[indexCurrent];
             newArray[indexCurrent] = first;
             indexCurrent = 0;
 
-            Random rd = new Random();
-            for(int i = playList.length -1; i > 0; i--){
-                int j = rd.nextInt(0, i+1);
+            Random random = new Random();
+            for(int i = playList.length -1; i > 1; i--){
+                int j = random.nextInt(0, i+1);
 
                 String[] temp = newArray[i];
                 newArray[i] = newArray[j];
                 newArray[j] = temp;
             }
+
             playerWindow.setQueueList(newArray);
+
+            playList = newArray;
 
     }
 
@@ -481,12 +487,11 @@ public class Player {
         this.shuffleIndex = 0;
         if (this.shuffle_active){
             this.shuffle_active = false;
-            System.out.println("shuffle disabled");
-            playerWindow.setQueueList(playList);
+            playerWindow.setQueueList(originalPlayList);
+            playList = originalPlayList;
         }
         else {
             this.shuffle_active = true;
-            System.out.println("shuffle enabled");
             Thread tCreateShuffle = new Thread(() -> { this.createShuffleQueue();});
             tCreateShuffle.start();
 
